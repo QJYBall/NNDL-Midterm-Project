@@ -215,5 +215,4 @@ class UNet(nn.Module):
         x = self.Up4(x1, x)
 
         out = self.OutConv(x)
-        print(out.size())
         return out
