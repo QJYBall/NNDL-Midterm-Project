@@ -4,7 +4,8 @@ from train import train
 parser = argparse.ArgumentParser()
 
 # add arguments
-parser.add_argument('--batch_size', type=int, default=16, help='batch size for train')
+parser.add_argument('--batch_size_train', type=int, default=16, help='batch size for train')
+parser.add_argument('--batch_size_val', type=int, default=16, help='batch size for val')
 
 parser.add_argument('--input_width', type=int, default=256, help="x dimension of the image")
 parser.add_argument('--input_height', type=int, default=256, help="y dimension of the image")
@@ -23,8 +24,9 @@ parser.add_argument('--log', type=str, default='log.txt', help="text file to sav
 parser.add_argument('--start_epoch', type=int, default=0, help="flag to set the starting epoch for training")
 parser.add_argument('--end_epoch', type=int, default=200, help="flag to indicate the final epoch of training")
 
-FLAGS = parser.parse_args()
+parser.add_argument('--unet_model', type=str, default="UNet", help="model")
 
+FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
     train(FLAGS)
