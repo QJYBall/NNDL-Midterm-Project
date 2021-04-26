@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.autograd import Variable
 from tensorboardX import SummaryWriter
 
 from data_loader import VOC_Dataset
@@ -13,10 +12,6 @@ from torch.utils.data import DataLoader
 from model import UNet
 from utils import setup_seed, weights_init
 from eval_tool import Dice
-
-
-os.environ['KMP_DUPLICATE_LIB_OK']='True'
-os.environ["CUDA_VISIBLE_DEVICES"]='7'
 
 
 def train(FLAGS):
@@ -30,9 +25,8 @@ def train(FLAGS):
     INPUT_HEIGHT = FLAGS.input_height
     MODEL = FLAGS.unet_model
 
-    model = UNet(n_channels=3, n_classes=NUM_CLASSES, bilinear=False, model=MODEL)
+    model = UNet(n_channels=3, n_classes=NUM_CLASSES, bilinear=False, model=MODEL).cuda()
     model.apply(weights_init)
-    model.cuda()
     
     train_image = VOC_Dataset("../data_csv/train.csv",INPUT_WIDTH,INPUT_HEIGHT)
     train_loader = cycle(DataLoader(train_image, batch_size=BATCH_SIZE_TRAIN, shuffle=True, num_workers=0, drop_last=True))
@@ -48,7 +42,7 @@ def train(FLAGS):
     )
 
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
-    dice_loss = Dice()
+    dice_loss = Dice().cuda()
     
     Img = torch.FloatTensor(BATCH_SIZE_TRAIN, 3, INPUT_WIDTH, INPUT_HEIGHT).cuda()
     Label = torch.LongTensor(BATCH_SIZE_TRAIN, INPUT_WIDTH, INPUT_HEIGHT).cuda()
@@ -63,9 +57,12 @@ def train(FLAGS):
     # initialize summary writer
     writer = SummaryWriter()
 
+    old_dice = 0
+
     for epoch in range(FLAGS.start_epoch, FLAGS.end_epoch):
         
         model.train()
+
         for iteration in range(int(len(train_image) / BATCH_SIZE_TRAIN)):
 
             image, label = next(train_loader)
@@ -96,9 +93,14 @@ def train(FLAGS):
 
 
         if (epoch + 1) % 10 == 0 or (epoch + 1) == FLAGS.end_epoch: 
+
             model.eval()
-            with torch.no_grad(): 
+
+            with torch.no_grad():
+
                 dice_score = 0
+                ce_loss = 0
+
                 for iteration in range(int(len(val_image) / BATCH_SIZE_VAL)):
 
                     image, label = next(val_loader)
@@ -108,15 +110,18 @@ def train(FLAGS):
 
                     output = model(Img)
                     output = F.log_softmax(output,dim=1)
-                    
                     loss = cross_entropy_loss(output, Label)
+                    ce_loss += loss * BATCH_SIZE_VAL
 
                     pred = output.argmax(dim=1).squeeze()
                     dice = dice_loss(pred, Label)
                     dice_score += dice * BATCH_SIZE_VAL
-                
-                print("Epoch",epoch, " - dice: ", dice_score/len(val_image))         
+                                    
+                print("Epoch",epoch, " - dice: ", dice_score.data.cpu().numpy()/len(val_image))  
+                print("Epoch",epoch, " - ce loss: ", ce_loss.data.cpu().numpy()/len(val_image))
+                print("\n")
 
-
-        if (epoch + 1) % 10 == 0 or (epoch + 1) == FLAGS.end_epoch:  
-            torch.save(model.state_dict(), os.path.join('checkpoints', FLAGS.model))
+            if dice_score > old_dice:
+                print("Epoch",epoch,"- model saved")
+                torch.save(model.state_dict(), os.path.join('checkpoints', FLAGS.model))
+                old_dice = dice_score

@@ -1,11 +1,14 @@
 import argparse
+import os
 from train import train
+from test import test
 
 parser = argparse.ArgumentParser()
 
 # add arguments
 parser.add_argument('--batch_size_train', type=int, default=16, help='batch size for train')
 parser.add_argument('--batch_size_val', type=int, default=16, help='batch size for val')
+parser.add_argument('--batch_size_test', type=int, default=15, help='batch size for test')
 
 parser.add_argument('--input_width', type=int, default=256, help="x dimension of the image")
 parser.add_argument('--input_height', type=int, default=256, help="y dimension of the image")
@@ -22,11 +25,15 @@ parser.add_argument('--model', type=str, default='model.pth', help="model save")
 parser.add_argument('--log', type=str, default='log.txt', help="text file to save training logs")
 
 parser.add_argument('--start_epoch', type=int, default=0, help="flag to set the starting epoch for training")
-parser.add_argument('--end_epoch', type=int, default=200, help="flag to indicate the final epoch of training")
+parser.add_argument('--end_epoch', type=int, default=500, help="flag to indicate the final epoch of training")
 
 parser.add_argument('--unet_model', type=str, default="UNet", help="model")
 
 FLAGS = parser.parse_args()
 
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
+# os.environ["CUDA_VISIBLE_DEVICES"]='7'
+
 if __name__ == '__main__':
     train(FLAGS)
+    test(FLAGS)
