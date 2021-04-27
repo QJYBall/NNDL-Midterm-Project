@@ -41,9 +41,9 @@ class Recurrent_Block(nn.Module):
     def forward(self, x):
         for i in range(self.t):
             if i==0:
-                x_ = self.conv(x)
-            x_ = self.conv(x + x_)
-        return x_
+                x1 = self.conv(x)
+            x1 = self.conv(x + x1)
+        return x1
 
 
 class RRCNN_Block(nn.Module):
@@ -59,8 +59,8 @@ class RRCNN_Block(nn.Module):
 
     def forward(self,x):
         x = self.Conv_1x1(x)
-        x_ = self.RCNN(x)
-        return x + x_
+        x1 = self.RCNN(x)
+        return x + x1
 
 
 class Attention_Block(nn.Module):
