@@ -2,17 +2,19 @@ import pandas as pd
 import os
 
 file_name = []
-with open("data/VOC2012/ImageSets/Segmentation/trainval.txt", "r") as f:
+with open("data/VOC2012/ImageSets/Segmentation/trainval.txt","r") as f:
     for line in f.readlines():
         file_name.append(line.strip('\n'))
+
 
 image = []
 label = []
 for name in file_name:
-    image.append(os.path.join("../data/VOC2012/JPEGImages/" + name + ".jpg"))
-    label.append(os.path.join("../data/VOC2012/SegmentationClass/" + name + ".png"))
+    image.append(os.path.join("../data/VOC2012/JPEGImages/"+name+".jpg"))
+    label.append(os.path.join("../data/VOC2012/SegmentationClass/"+name+".png"))
 
-df = pd.DataFrame({'image': image, 'label': label})
+
+df = pd.DataFrame({'image':image,'label':label})
 
 df_train = df.sample(frac=0.7)
 df_val_test = df[~df.index.isin(df_train.index)]
@@ -27,3 +29,4 @@ df_test.to_csv("data_csv/test.csv")
 # train 7
 # validation 1
 # test 2
+
