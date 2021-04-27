@@ -15,9 +15,12 @@ class Conv_Block(nn.Module):
             nn.Conv2d(in_chs, mid_chs, kernel_size=3, stride=1, padding=1, bias=True),
             nn.BatchNorm2d(mid_chs),
             nn.ReLU(inplace=True),
+            nn.Dropout(),
+
             nn.Conv2d(mid_chs, out_chs, kernel_size=3, stride=1, padding=1, bias=True),
             nn.BatchNorm2d(out_chs),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout(),
         )
 
     def forward(self, x):
@@ -35,7 +38,8 @@ class Recurrent_Block(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(out_chs, out_chs, kernel_size=3, stride=1, padding=1, bias=True),
 		    nn.BatchNorm2d(out_chs),
-			nn.ReLU(inplace=True)
+			nn.ReLU(inplace=True),
+            nn.Dropout(),
         )
 
     def forward(self, x):
@@ -71,7 +75,7 @@ class Attention_Block(nn.Module):
         self.W_g = nn.Sequential(
             nn.Conv2d(F_g, F_int, kernel_size=1, stride=1, padding=0, bias=True),
             nn.BatchNorm2d(F_int)
-            )
+        )
         
         self.W_x = nn.Sequential(
             nn.Conv2d(F_l, F_int, kernel_size=1, stride=1, padding=0, bias=True),

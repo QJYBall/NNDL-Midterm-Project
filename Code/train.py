@@ -27,7 +27,7 @@ def train(FLAGS):
     train_loader = cycle(DataLoader(train_image, batch_size=BATCH_SIZE_TRAIN, shuffle=True, num_workers=2, drop_last=True))
 
     val_image = VOC_Dataset("../data_csv/val.csv",INPUT_WIDTH,INPUT_HEIGHT)
-    val_loader = cycle(DataLoader(val_image, batch_size=BATCH_SIZE_TRAIN, shuffle=False, num_workers=2, drop_last=True))
+    val_loader = cycle(DataLoader(val_image, batch_size=BATCH_SIZE_VAL, shuffle=False, num_workers=2, drop_last=True))
     
     optimizer = optim.Adam(
         model.parameters(),
@@ -67,7 +67,7 @@ def train(FLAGS):
             image, label = image.cuda(), label.cuda()
                             
             output = model(image)
-            output = F.log_softmax(output,dim=1)
+            # output = F.log_softmax(output,dim=1)
             loss = cross_entropy_loss(output, label)
 
             optimizer.zero_grad()
@@ -88,12 +88,12 @@ def train(FLAGS):
                    
             pred = output.argmax(dim=1).squeeze()
             dice = dice_loss(pred, label)
-            train_dice += dice.cpu().item() * BATCH_SIZE_TRAIN
+            train_dice += dice.cpu().item()
 
             train_true_label = torch.cat((train_true_label, label.data.cpu()), dim=0)
             train_pred_label = torch.cat((train_pred_label, pred.data.cpu()), dim=0)    
             
-        train_dice /= len(train_image)
+        train_dice /= int(len(train_image) / BATCH_SIZE_TRAIN)
         t_PA, t_MPA, t_MIoU, t_FWIoU = eval_score(train_true_label.numpy(), train_pred_label.numpy(), NUM_CLASSES)
     
         with open(FLAGS.train, 'a') as eval:   
@@ -129,17 +129,17 @@ def train(FLAGS):
                     output = model(image)
                     output = F.log_softmax(output,dim=1)
                     loss = cross_entropy_loss(output, label)
-                    ce_loss += loss.cpu().item() * BATCH_SIZE_VAL
+                    ce_loss += loss.cpu().item()
 
                     pred = output.argmax(dim=1).squeeze()
                     dice = dice_loss(pred, label)
-                    dice_score += dice.cpu().item() * BATCH_SIZE_VAL
+                    dice_score += dice.cpu().item()
 
                     true_label = torch.cat((true_label, label.data.cpu()), dim=0)
                     pred_label = torch.cat((pred_label, pred.data.cpu()), dim=0)
                 
-                ce_loss /= len(val_image)
-                dice_score /= len(val_image)
+                ce_loss /= int(len(val_image) / BATCH_SIZE_VAL)
+                dice_score /= int(len(val_image) / BATCH_SIZE_VAL)
                 PA, MPA, MIoU, FWIoU = eval_score(true_label.numpy(), pred_label.numpy(), NUM_CLASSES)
             
             with open(FLAGS.eval, 'a') as eval:   

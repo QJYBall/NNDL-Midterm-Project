@@ -47,5 +47,6 @@ def eval_score(labels, preds, n_class):
     # frequency weighted intersection over union
     freq = hist.sum(axis=1) / hist.sum()
     FWIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
+    
     return PA, MPA, MIoU, FWIoU
     
