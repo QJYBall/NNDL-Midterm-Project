@@ -49,4 +49,3 @@ def eval_score(labels, preds, n_class):
     FWIoU = (freq[freq > 0] * IoU[freq > 0]).sum()
     
     return PA, MPA, MIoU, FWIoU
-    

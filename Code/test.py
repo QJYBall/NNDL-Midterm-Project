@@ -92,4 +92,3 @@ def test(FLAGS):
         ce_loss, dice_score, 
         PA, MPA, MIoU, FWIoU
     ))
-    
