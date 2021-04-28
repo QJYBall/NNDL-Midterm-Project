@@ -24,10 +24,10 @@ def train(FLAGS):
     model.apply(weights_init)
     
     train_image = VOC_Dataset("../data_csv/train.csv",INPUT_WIDTH,INPUT_HEIGHT)
-    train_loader = cycle(DataLoader(train_image, batch_size=BATCH_SIZE_TRAIN, shuffle=True, num_workers=2, drop_last=True))
+    train_loader = cycle(DataLoader(train_image, batch_size=BATCH_SIZE_TRAIN, shuffle=True, num_workers=0, drop_last=True))
 
     val_image = VOC_Dataset("../data_csv/val.csv",INPUT_WIDTH,INPUT_HEIGHT)
-    val_loader = cycle(DataLoader(val_image, batch_size=BATCH_SIZE_VAL, shuffle=False, num_workers=2, drop_last=True))
+    val_loader = cycle(DataLoader(val_image, batch_size=BATCH_SIZE_VAL, shuffle=False, num_workers=0, drop_last=False))
     
     optimizer = optim.Adam(
         model.parameters(),
@@ -46,7 +46,7 @@ def train(FLAGS):
     with open(FLAGS.log, 'w') as log:
         log.write('Epoch\tIteration\tCross_Entropy_Loss\n') 
 
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
 
     # initialize summary writer
     writer = SummaryWriter()
@@ -67,7 +67,6 @@ def train(FLAGS):
             image, label = image.cuda(), label.cuda()
                             
             output = model(image)
-            # output = F.log_softmax(output,dim=1)
             loss = cross_entropy_loss(output, label)
 
             optimizer.zero_grad()
@@ -86,9 +85,9 @@ def train(FLAGS):
             writer.add_scalar('Cross Entropy Loss', loss.data.storage().tolist()[0],\
                 epoch * (int(len(train_image) / BATCH_SIZE_TRAIN) + 1) + iteration) 
                    
-            pred = output.argmax(dim=1).squeeze()
-            dice = dice_loss(pred, label)
-            train_dice += dice.cpu().item()
+            pred = F.log_softmax(output,dim=1).argmax(dim=1).squeeze()
+            dice_train = dice_loss(pred, label)
+            train_dice += dice_train.cpu().item()
 
             train_true_label = torch.cat((train_true_label, label.data.cpu()), dim=0)
             train_pred_label = torch.cat((train_pred_label, pred.data.cpu()), dim=0)    
@@ -110,7 +109,7 @@ def train(FLAGS):
                 
         scheduler.step()
 
-        if (epoch + 1) % 5 == 0 or (epoch + 1) == FLAGS.end_epoch: 
+        if (epoch + 1) % 10 == 0 or (epoch + 1) == FLAGS.end_epoch: 
 
             model.eval()
        
@@ -127,19 +126,18 @@ def train(FLAGS):
                     image, label = image.cuda(), label.cuda()
 
                     output = model(image)
-                    output = F.log_softmax(output,dim=1)
-                    loss = cross_entropy_loss(output, label)
-                    ce_loss += loss.cpu().item()
+                    loss_val = cross_entropy_loss(output, label)
+                    ce_loss += loss_val.cpu().item() * BATCH_SIZE_VAL
 
-                    pred = output.argmax(dim=1).squeeze()
-                    dice = dice_loss(pred, label)
-                    dice_score += dice.cpu().item()
+                    pred = F.log_softmax(output,dim=1).argmax(dim=1).squeeze()
+                    dice_val = dice_loss(pred, label)
+                    dice_score += dice_val.cpu().item() * BATCH_SIZE_VAL
 
                     true_label = torch.cat((true_label, label.data.cpu()), dim=0)
                     pred_label = torch.cat((pred_label, pred.data.cpu()), dim=0)
                 
-                ce_loss /= int(len(val_image) / BATCH_SIZE_VAL)
-                dice_score /= int(len(val_image) / BATCH_SIZE_VAL)
+                ce_loss /= len(val_image)
+                dice_score /= len(val_image)
                 PA, MPA, MIoU, FWIoU = eval_score(true_label.numpy(), pred_label.numpy(), NUM_CLASSES)
             
             with open(FLAGS.eval, 'a') as eval:   

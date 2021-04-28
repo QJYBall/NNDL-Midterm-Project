@@ -164,15 +164,15 @@ class UNet_Up(nn.Module):
 
     def forward(self, x_old, x_new):
         x_new = self.up(x_new)
-    
-        if self.model=="Attention_UNet" or self.model=="Attention_R2UNet":
-            x_old = self.attention(g=x_new, x=x_old)
 
         diffY = x_old.size()[2] - x_new.size()[2]
         diffX = x_old.size()[3] - x_new.size()[3]
 
         x_new = F.pad(x_new, [diffX // 2, diffX - diffX // 2, 
                               diffY // 2, diffY - diffY // 2])
+
+        if self.model=="Attention_UNet" or self.model=="Attention_R2UNet":
+            x_old = self.attention(g=x_new, x=x_old)
 
         x = torch.cat([x_old, x_new], dim=1)
         out = self.conv(x)

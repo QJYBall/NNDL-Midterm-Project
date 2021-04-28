@@ -88,7 +88,8 @@ def train_transform(image,label,crop_size=(256,256)):
     tfs = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([.485, .456, .406], [.229, .224, .225]),
-        
+        transforms.RandomVerticalFlip(),
+        transforms.RandomHorizontalFlip()
     ])
 
     image = tfs(image)

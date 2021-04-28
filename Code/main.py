@@ -11,11 +11,11 @@ parser = argparse.ArgumentParser()
 
 # add arguments
 parser.add_argument('--batch_size_train', type=int, default=16, help='batch size for train')
-parser.add_argument('--batch_size_val', type=int, default=16, help='batch size for val')
+parser.add_argument('--batch_size_val', type=int, default=20, help='batch size for val')
 parser.add_argument('--batch_size_test', type=int, default=15, help='batch size for test')
 
-parser.add_argument('--input_width', type=int, default=300, help="x dimension of the image")
-parser.add_argument('--input_height', type=int, default=300, help="y dimension of the image")
+parser.add_argument('--input_width', type=int, default=256, help="x dimension of the image")
+parser.add_argument('--input_height', type=int, default=256, help="y dimension of the image")
 
 parser.add_argument('--num_classes', type=int, default=21, help='the number of the classes')
 

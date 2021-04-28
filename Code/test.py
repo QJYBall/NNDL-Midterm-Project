@@ -45,11 +45,10 @@ def test(FLAGS):
             image, label = image.cuda(), label.cuda()
 
             output = model(image)
-            output = F.log_softmax(output,dim=1)
             loss = cross_entropy_loss(output, label)
             ce_loss += loss.cpu().item() * BATCH_SIZE_TEST
 
-            pred = output.argmax(dim=1).squeeze()
+            pred = F.log_softmax(output,dim=1).argmax(dim=1).squeeze()
             dice = dice_loss(pred, label)
             dice_score += dice.cpu().item() * BATCH_SIZE_TEST
 
