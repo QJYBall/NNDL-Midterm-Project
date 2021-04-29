@@ -109,47 +109,45 @@ def train(FLAGS):
                 
         scheduler.step()
 
-        if (epoch + 1) % 10 == 0 or (epoch + 1) == FLAGS.end_epoch: 
+        model.eval()
+    
+        true_label = torch.LongTensor()
+        pred_label = torch.LongTensor()
+        ce_loss = 0.0
+        dice_score = 0.0
 
-            model.eval()
-       
-            true_label = torch.LongTensor()
-            pred_label = torch.LongTensor()
-            ce_loss = 0.0
-            dice_score = 0.0
+        with torch.no_grad():
 
-            with torch.no_grad():
+            for iteration in range(int(len(val_image) / BATCH_SIZE_VAL)):
 
-                for iteration in range(int(len(val_image) / BATCH_SIZE_VAL)):
+                image, label = next(val_loader)
+                image, label = image.cuda(), label.cuda()
 
-                    image, label = next(val_loader)
-                    image, label = image.cuda(), label.cuda()
+                output = model(image)
+                loss_val = cross_entropy_loss(output, label)
+                ce_loss += loss_val.cpu().item() * BATCH_SIZE_VAL
 
-                    output = model(image)
-                    loss_val = cross_entropy_loss(output, label)
-                    ce_loss += loss_val.cpu().item() * BATCH_SIZE_VAL
+                pred = F.log_softmax(output,dim=1).argmax(dim=1).squeeze()
+                dice_val = dice_loss(pred, label)
+                dice_score += dice_val.cpu().item() * BATCH_SIZE_VAL
 
-                    pred = F.log_softmax(output,dim=1).argmax(dim=1).squeeze()
-                    dice_val = dice_loss(pred, label)
-                    dice_score += dice_val.cpu().item() * BATCH_SIZE_VAL
-
-                    true_label = torch.cat((true_label, label.data.cpu()), dim=0)
-                    pred_label = torch.cat((pred_label, pred.data.cpu()), dim=0)
-                
-                ce_loss /= len(val_image)
-                dice_score /= len(val_image)
-                PA, MPA, MIoU, FWIoU = eval_score(true_label.numpy(), pred_label.numpy(), NUM_CLASSES)
+                true_label = torch.cat((true_label, label.data.cpu()), dim=0)
+                pred_label = torch.cat((pred_label, pred.data.cpu()), dim=0)
             
-            with open(FLAGS.eval, 'a') as eval:   
-                eval.write('epoch:{}, ce_loss:{:.4f}, dice:{:.4f}, PA:{:.4f}, MPA:{:.4f}, MIoU:{:.4f}, FWIoU:{:.4f}\n'.format(
-                    epoch+1, 
-                    ce_loss, dice_score, 
-                    PA, MPA, MIoU, FWIoU
-                ))
+            ce_loss /= len(val_image)
+            dice_score /= len(val_image)
+            PA, MPA, MIoU, FWIoU = eval_score(true_label.numpy(), pred_label.numpy(), NUM_CLASSES)
+        
+        with open(FLAGS.eval, 'a') as eval:   
+            eval.write('epoch:{}, ce_loss:{:.4f}, dice:{:.4f}, PA:{:.4f}, MPA:{:.4f}, MIoU:{:.4f}, FWIoU:{:.4f}\n'.format(
+                epoch+1, 
+                ce_loss, dice_score, 
+                PA, MPA, MIoU, FWIoU
+            ))
 
-            score = (MPA + MIoU) / 2
+        score = (MPA + MIoU) / 2
 
-            if score > best_score:
-                best_score = score
-                print("Epoch", epoch+1, "- model saved")
-                torch.save(model.state_dict(), os.path.join('checkpoints', FLAGS.model))
+        if score > best_score:
+            best_score = score
+            print("Epoch", epoch+1, "- model saved")
+            torch.save(model.state_dict(), os.path.join('checkpoints', FLAGS.model))
