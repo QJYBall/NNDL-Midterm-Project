@@ -20,9 +20,9 @@ def train(FLAGS):
     INPUT_WIDTH = FLAGS.input_width
     INPUT_HEIGHT = FLAGS.input_height
 
-    # model = U_Net(3, NUM_CLASSES).cuda()
+    model = U_Net(3, NUM_CLASSES).cuda()
     # model = R2U_Net(3, NUM_CLASSES, 2).cuda()
-    model = AttU_Net(3, NUM_CLASSES).cuda()
+    # model = AttU_Net(3, NUM_CLASSES).cuda()
     # model = R2AttU_Net(3, NUM_CLASSES, 2).cuda()
     model.apply(weights_init)
     
