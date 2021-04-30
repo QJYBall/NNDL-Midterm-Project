@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 import numpy as np
+import torch.nn.functional as F
 
 
 class Dice(nn.Module):
@@ -12,10 +13,13 @@ class Dice(nn.Module):
 
     def forward(self, y_pred, y_true):
         assert y_pred.size() == y_true.size()
+        y_pred = F.one_hot(y_pred, num_classes=21)
+        y_true = F.one_hot(y_true, num_classes=21)
+
         n_dims = y_true.ndimension()
-        numerator = 2 * torch.sum(y_true * y_pred, dim=[0,] + list(range(2, n_dims)))
-        denominator = torch.sum(y_true ** 2 + y_pred ** 2, dim=[0,] + list(range(2, n_dims)))
-        dice = torch.mean(numerator / (denominator + self.eps))
+        numerator = 2 * torch.sum(y_true * y_pred, dim=list(range(0, n_dims - 1)))
+        denominator = torch.sum(y_true**2 + y_pred**2, dim=list(range(0, n_dims - 1)))
+        dice = torch.mean((numerator + self.eps) / (denominator + self.eps))
 
         return dice
 

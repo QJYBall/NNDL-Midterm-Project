@@ -7,8 +7,8 @@ import torch.nn.functional as F
 from tensorboardX import SummaryWriter
 from data_loader import VOC_Dataset
 from torch.utils.data import DataLoader
-from model import UNet
-from utils import weights_init
+from model import *
+from utils import label2image, weights_init
 from eval_tool import Dice, eval_score
 
 
@@ -20,20 +20,23 @@ def train(FLAGS):
     INPUT_WIDTH = FLAGS.input_width
     INPUT_HEIGHT = FLAGS.input_height
 
-    model = UNet(n_channels=3, n_classes=NUM_CLASSES, bilinear=False, model=FLAGS.unet_model).cuda()
+    # model = U_Net(3, NUM_CLASSES).cuda()
+    # model = R2U_Net(3, NUM_CLASSES, 2).cuda()
+    model = AttU_Net(3, NUM_CLASSES).cuda()
+    # model = R2AttU_Net(3, NUM_CLASSES, 2).cuda()
     model.apply(weights_init)
     
-    train_image = VOC_Dataset("../data_csv/train.csv",INPUT_WIDTH,INPUT_HEIGHT)
+    train_image = VOC_Dataset("../data_csv/train_small.csv",INPUT_WIDTH,INPUT_HEIGHT)
     train_loader = cycle(DataLoader(train_image, batch_size=BATCH_SIZE_TRAIN, shuffle=True, num_workers=0, drop_last=True))
 
-    val_image = VOC_Dataset("../data_csv/val.csv",INPUT_WIDTH,INPUT_HEIGHT)
+    val_image = VOC_Dataset("../data_csv/val_small.csv",INPUT_WIDTH,INPUT_HEIGHT)
     val_loader = cycle(DataLoader(val_image, batch_size=BATCH_SIZE_VAL, shuffle=False, num_workers=0, drop_last=False))
     
     optimizer = optim.Adam(
         model.parameters(),
         lr=FLAGS.learning_rate,
         betas=(FLAGS.beta_1, FLAGS.beta_2),
-        weight_decay=2e-5
+        weight_decay=1e-4
     )
 
     cross_entropy_loss = nn.CrossEntropyLoss().cuda()
@@ -46,7 +49,7 @@ def train(FLAGS):
     with open(FLAGS.log, 'w') as log:
         log.write('Epoch\tIteration\tCross_Entropy_Loss\n') 
 
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.5)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
 
     # initialize summary writer
     writer = SummaryWriter()
@@ -109,6 +112,13 @@ def train(FLAGS):
                 
         scheduler.step()
 
+        num_shown = max(5, BATCH_SIZE_TRAIN)
+        writer.add_images('train_image', image[:num_shown, ...], global_step=epoch)
+        pred_img, label_img = label2image(NUM_CLASSES)(pred.cpu().numpy(), label.cpu().numpy())
+        writer.add_images('train_label', label_img[:num_shown, ...], global_step=epoch, dataformats='NHWC')
+        writer.add_images('train_pred', pred_img[:num_shown, ...], global_step=epoch, dataformats='NHWC')
+
+        # val
         model.eval()
     
         true_label = torch.LongTensor()
@@ -144,6 +154,12 @@ def train(FLAGS):
                 ce_loss, dice_score, 
                 PA, MPA, MIoU, FWIoU
             ))
+        
+        num_shown = max(5, BATCH_SIZE_VAL)
+        writer.add_images('val_image', image[:num_shown, ...], global_step=epoch)
+        pred_img, label_img = label2image(NUM_CLASSES)(pred.cpu().numpy(), label.cpu().numpy())
+        writer.add_images('val_label', label_img[:, ...], global_step=epoch, dataformats='NHWC')
+        writer.add_images('val_pred', pred_img[:, ...], global_step=epoch, dataformats='NHWC')
 
         score = (MPA + MIoU) / 2
 

@@ -3,7 +3,7 @@ from data_loader import VOC_Dataset
 from itertools import cycle
 from torch.utils.data import DataLoader
 import torch
-from model import UNet
+from model import *
 import os
 import torch.nn as nn
 import torch.nn.functional as F
@@ -20,9 +20,12 @@ def test(FLAGS):
     INPUT_HEIGHT = FLAGS.input_height
     MODEL = FLAGS.unet_model
 
-    model = UNet(n_channels=3, n_classes=NUM_CLASSES, bilinear=False, model=MODEL)
+    # model = U_Net(3, NUM_CLASSES)
+    # model = R2U_Net(3, NUM_CLASSES, 2)
+    model = AttU_Net(3, NUM_CLASSES)
+    # model = R2AttU_Net(3, NUM_CLASSES, 2)
 
-    test_image = VOC_Dataset("../data_csv/test.csv",INPUT_WIDTH,INPUT_HEIGHT)
+    test_image = VOC_Dataset("../data_csv/test_small.csv",INPUT_WIDTH,INPUT_HEIGHT)
     test_loader = cycle(DataLoader(test_image, batch_size = BATCH_SIZE_TEST, shuffle=False))
 
     model.load_state_dict(torch.load(os.path.join('checkpoints', FLAGS.model), map_location='cuda'))

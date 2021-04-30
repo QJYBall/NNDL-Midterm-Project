@@ -4,7 +4,7 @@ os.environ['KMP_DUPLICATE_LIB_OK']='True'
 os.environ["CUDA_VISIBLE_DEVICES"]='7'
 
 from train import train
-from test import test
+# from test import test
 from utils import setup_seed
 
 parser = argparse.ArgumentParser()
@@ -38,6 +38,6 @@ parser.add_argument('--unet_model', type=str, default="UNet", help="model")
 FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
-    setup_seed(99)
+    # setup_seed(78)
     train(FLAGS)
     # test(FLAGS)
