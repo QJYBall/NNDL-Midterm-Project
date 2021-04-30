@@ -20,10 +20,14 @@ def test(FLAGS):
     INPUT_HEIGHT = FLAGS.input_height
     MODEL = FLAGS.unet_model
 
-    # model = U_Net(3, NUM_CLASSES)
-    # model = R2U_Net(3, NUM_CLASSES, 2)
-    model = AttU_Net(3, NUM_CLASSES)
-    # model = R2AttU_Net(3, NUM_CLASSES, 2)
+    if MODEL == "UNet":
+        model = U_Net(3, NUM_CLASSES)
+    elif MODEL == "R2UNet":
+        model = R2U_Net(3, NUM_CLASSES, 2)
+    elif MODEL == "Attention_UNet":
+        model = AttU_Net(3, NUM_CLASSES)
+    elif MODEL == "Attention_R2UNet":
+        model = R2AttU_Net(3, NUM_CLASSES, 2)
 
     test_image = VOC_Dataset("../data_csv/test_small.csv",INPUT_WIDTH,INPUT_HEIGHT)
     test_loader = cycle(DataLoader(test_image, batch_size = BATCH_SIZE_TEST, shuffle=False))

@@ -38,6 +38,6 @@ parser.add_argument('--unet_model', type=str, default="UNet", help="model")
 FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
-    # setup_seed(78)
+    setup_seed(78)
     train(FLAGS)
     # test(FLAGS)

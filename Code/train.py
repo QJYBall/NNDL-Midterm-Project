@@ -19,11 +19,16 @@ def train(FLAGS):
     NUM_CLASSES = FLAGS.num_classes
     INPUT_WIDTH = FLAGS.input_width
     INPUT_HEIGHT = FLAGS.input_height
+    MODEL = FLAGS.unet_model
 
-    model = U_Net(3, NUM_CLASSES).cuda()
-    # model = R2U_Net(3, NUM_CLASSES, 2).cuda()
-    # model = AttU_Net(3, NUM_CLASSES).cuda()
-    # model = R2AttU_Net(3, NUM_CLASSES, 2).cuda()
+    if MODEL == "UNet":
+        model = U_Net(3, NUM_CLASSES).cuda()
+    elif MODEL == "R2UNet":
+        model = R2U_Net(3, NUM_CLASSES, 2).cuda()
+    elif MODEL == "Attention_UNet":
+        model = AttU_Net(3, NUM_CLASSES).cuda()
+    elif MODEL == "Attention_R2UNet":
+        model = R2AttU_Net(3, NUM_CLASSES, 2).cuda()
     model.apply(weights_init)
     
     train_image = VOC_Dataset("../data_csv/train_small.csv",INPUT_WIDTH,INPUT_HEIGHT)
